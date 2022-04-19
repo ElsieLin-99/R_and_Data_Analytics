@@ -1,0 +1,434 @@
+---
+title: 'Climate Data'
+author: "Yingxin Lin"
+output: pdf_document
+---
+
+# Importing Data and Preprocessing
+## Importing Library and clear the environment
+```{r}
+# List of all packages 
+load.lib<-c("raster", "rgdal","caret","sp","hrbrthemes")
+
+install.lib<-load.lib[!load.lib %in% installed.packages()]
+for(lib in install.lib) install.packages(lib,dependencies=TRUE)
+sapply(load.lib,require,character=TRUE)
+# Clear the environment
+#rm(list = ls(all.names = TRUE)) # will clear all objects, including hidden objects
+#gc() # free up memory and report memory usage
+```
+## Importing the tmax(maximum temperature) (1970-2000)
+
+```{r}
+############################################################
+### Importing the tmax(maximum temperature) (1970-2000)
+############################################################
+tmax_1<- raster("maximum_temperature/wc2.1_10m_tmax_01.tif")
+tmax_2<- raster("maximum_temperature/wc2.1_10m_tmax_02.tif")
+tmax_3<- raster("maximum_temperature/wc2.1_10m_tmax_03.tif")
+tmax_4<- raster("maximum_temperature/wc2.1_10m_tmax_04.tif")
+tmax_5<- raster("maximum_temperature/wc2.1_10m_tmax_05.tif")
+tmax_6<- raster("maximum_temperature/wc2.1_10m_tmax_06.tif")
+tmax_7<- raster("maximum_temperature/wc2.1_10m_tmax_07.tif")
+tmax_8<- raster("maximum_temperature/wc2.1_10m_tmax_08.tif")
+tmax_9<- raster("maximum_temperature/wc2.1_10m_tmax_09.tif")
+tmax_10<- raster("maximum_temperature/wc2.1_10m_tmax_10.tif")
+tmax_11<- raster("maximum_temperature/wc2.1_10m_tmax_11.tif")
+tmax_12<- raster("maximum_temperature/wc2.1_10m_tmax_12.tif")
+
+tmax_stack <- stack(tmax_1,tmax_2,tmax_3,tmax_4,tmax_5,
+                    tmax_6,tmax_7,tmax_8,tmax_9,tmax_10,
+                    tmax_11,tmax_12)
+Crop <- c(-150,-40, 0,70)
+tmax_crop <- crop(tmax_stack, Crop)
+# Plot cropped area
+plot(tmax_crop)
+
+```
+### Visualization
+```{r}
+hist(tmax_crop)
+```
+
+
+```{r}
+############################################################
+### Convert the RasterLayer to Matrix for tmax
+############################################################
+tmax_points_1 <- rasterToPoints(tmax_1)
+tmax_points_2 <- rasterToPoints(tmax_2)
+tmax_points_3 <- rasterToPoints(tmax_3)
+tmax_points_4 <- rasterToPoints(tmax_4)
+tmax_points_5 <- rasterToPoints(tmax_5)
+tmax_points_6 <- rasterToPoints(tmax_6)
+tmax_points_7 <- rasterToPoints(tmax_7)
+tmax_points_8 <- rasterToPoints(tmax_8)
+tmax_points_9 <- rasterToPoints(tmax_9)
+tmax_points_10 <- rasterToPoints(tmax_10)
+tmax_points_11 <- rasterToPoints(tmax_11)
+tmax_points_12 <- rasterToPoints(tmax_12)
+
+# Stack the 12 month data
+tmax_stack_points <- rasterToPoints(tmax_stack)
+# Convert the matrix data to dataframe format
+tmax_stack_df <- as.data.frame(tmax_stack_points)
+# Cropping data within the area 
+new_subset <- subset(tmax_stack_df, tmax_stack_df$x >=-150 & tmax_stack_df$x <=-40 
+                     & tmax_stack_df$y >= 0 & tmax_stack_df$y <=70)
+
+# Prepare the Average tmax data
+months <- 1:12
+mean_tmax<-c(mean(new_subset$wc2.1_10m_tmax_01),mean(new_subset$wc2.1_10m_tmax_02),
+             mean(new_subset$wc2.1_10m_tmax_03),mean(new_subset$wc2.1_10m_tmax_04),
+             mean(new_subset$wc2.1_10m_tmax_05),mean(new_subset$wc2.1_10m_tmax_06),
+             mean(new_subset$wc2.1_10m_tmax_07),mean(new_subset$wc2.1_10m_tmax_08),
+             mean(new_subset$wc2.1_10m_tmax_09),mean(new_subset$wc2.1_10m_tmax_10),
+             mean(new_subset$wc2.1_10m_tmax_11),mean(new_subset$wc2.1_10m_tmax_12)
+)
+################### Plotting a line chart #################################
+# Plot the average maximum temperature from Jan to Dec in 1970-2000
+plot(months,mean_tmax,type = "b", pch = 19, 
+     col = "red", xlab = "Month", ylab = "Average maximum temperature",
+     main='Average maximum temperature, Jan-Dec')
+```
+## Importing the solar radiation (1970-2000)
+```{r}
+############################################################################
+##################### Importing the solar radiation (1970-2000)
+############################################################################
+sr_1<- raster("solar_radiation/wc2.1_10m_srad_01.tif")
+sr_2<- raster("solar_radiation/wc2.1_10m_srad_02.tif")
+sr_3<- raster("solar_radiation/wc2.1_10m_srad_03.tif")
+sr_4<- raster("solar_radiation/wc2.1_10m_srad_04.tif")
+sr_5<- raster("solar_radiation/wc2.1_10m_srad_05.tif")
+sr_6<- raster("solar_radiation/wc2.1_10m_srad_06.tif")
+sr_7<- raster("solar_radiation/wc2.1_10m_srad_07.tif")
+sr_8<- raster("solar_radiation/wc2.1_10m_srad_08.tif")
+sr_9<- raster("solar_radiation/wc2.1_10m_srad_09.tif")
+sr_10<- raster("solar_radiation/wc2.1_10m_srad_10.tif")
+sr_11<- raster("solar_radiation/wc2.1_10m_srad_11.tif")
+sr_12<- raster("solar_radiation/wc2.1_10m_srad_12.tif")
+
+sr_list <- c(sr_1,sr_2,sr_3,sr_4,sr_5,sr_6,sr_7,sr_8,sr_9,sr_10,sr_11,sr_12)
+
+sr_stack <- stack(sr_list)
+sr_crop <- crop(sr_stack, Crop)
+plot(sr_crop)
+```
+### Visualization
+```{r}
+hist(sr_crop)
+```
+
+
+```{r}
+############################################################
+### Convert the RasterLayer to Matrix for solar radiation
+############################################################
+sr_points_1 <- rasterToPoints(sr_1)
+sr_points_2 <- rasterToPoints(sr_2)
+sr_points_3 <- rasterToPoints(sr_3)
+sr_points_4 <- rasterToPoints(sr_4)
+sr_points_5 <- rasterToPoints(sr_5)
+sr_points_6 <- rasterToPoints(sr_6)
+sr_points_7 <- rasterToPoints(sr_7)
+sr_points_8 <- rasterToPoints(sr_8)
+sr_points_9 <- rasterToPoints(sr_9)
+sr_points_10 <- rasterToPoints(sr_10)
+sr_points_11 <- rasterToPoints(sr_11)
+sr_points_12 <- rasterToPoints(sr_12)
+
+# Stack the 12 months data
+sr_stack <- stack(sr_1,sr_2,sr_3,sr_4,sr_5,
+                               sr_6,sr_7,sr_8,sr_9,sr_10,
+                               sr_11,sr_12)
+
+sr_stack_points <- rasterToPoints(sr_stack)
+sr_stack_df <- as.data.frame(sr_stack_points)
+# Crop the data within the area
+new_subset <- subset(sr_stack_df, sr_stack_df$x >=-150 & sr_stack_df$x <=-40 
+                     & sr_stack_df$y >= 0 & sr_stack_df$y <=70)
+
+# Prepare the average solar radiation data
+months <- 1:12
+mean_sr<-c(mean(new_subset$wc2.1_10m_srad_01),mean(new_subset$wc2.1_10m_srad_02),
+             mean(new_subset$wc2.1_10m_srad_03),mean(new_subset$wc2.1_10m_srad_04),
+             mean(new_subset$wc2.1_10m_srad_05),mean(new_subset$wc2.1_10m_srad_06),
+             mean(new_subset$wc2.1_10m_srad_07),mean(new_subset$wc2.1_10m_srad_08),
+             mean(new_subset$wc2.1_10m_srad_09),mean(new_subset$wc2.1_10m_srad_10),
+             mean(new_subset$wc2.1_10m_srad_11),mean(new_subset$wc2.1_10m_srad_12)
+)
+################### Plotting a line chart #################################
+# Plot the average solar radiation from Jan to Dec in 1970-2000
+plot(months,mean_sr,type = "b", pch = 19, 
+     col = "blue", xlab = "Month", ylab = "Average Solar Radiation",
+     main='Average Solar Radiation, Jan-Dec')
+
+```
+## Importing the tmin(minimum temperature) (1970-2000)
+```{r}
+############################################################
+# Importing the tmin(minimum temperature) (1970-2000)
+###########################################################
+tmin_1<- raster("minimum_temperature/wc2.1_10m_tmin_01.tif")
+tmin_2<- raster("minimum_temperature/wc2.1_10m_tmin_02.tif")
+tmin_3<- raster("minimum_temperature/wc2.1_10m_tmin_03.tif")
+tmin_4<- raster("minimum_temperature/wc2.1_10m_tmin_04.tif")
+tmin_5<- raster("minimum_temperature/wc2.1_10m_tmin_05.tif")
+tmin_6<- raster("minimum_temperature/wc2.1_10m_tmin_06.tif")
+tmin_7<- raster("minimum_temperature/wc2.1_10m_tmin_07.tif")
+tmin_8<- raster("minimum_temperature/wc2.1_10m_tmin_08.tif")
+tmin_9<- raster("minimum_temperature/wc2.1_10m_tmin_09.tif")
+tmin_10<- raster("minimum_temperature/wc2.1_10m_tmin_10.tif")
+tmin_11<- raster("minimum_temperature/wc2.1_10m_tmin_11.tif")
+tmin_12<- raster("minimum_temperature/wc2.1_10m_tmin_12.tif")
+
+# Stack the data from Jan to Dec
+tmin_stack <- stack(tmin_1,tmin_2,tmin_3,tmin_4,tmin_5,
+                    tmin_6,tmin_7,tmin_8,tmin_9,tmin_10,
+                    tmin_11,tmin_12)
+Crop <- c(-150,-40, 0,70)
+tmin_crop <- crop(tmin_stack, Crop)
+plot(tmin_crop)
+```
+### Visualization
+```{r}
+hist(tmin_crop)
+```
+
+```{r}
+
+############################################################
+# Convert the RasterLayer to Matrix
+###########################################################
+tmin_points_1 <- rasterToPoints(tmin_1)
+tmin_points_2 <- rasterToPoints(tmin_2)
+tmin_points_3 <- rasterToPoints(tmin_3)
+tmin_points_4 <- rasterToPoints(tmin_4)
+tmin_points_5 <- rasterToPoints(tmin_5)
+tmin_points_6 <- rasterToPoints(tmin_6)
+tmin_points_7 <- rasterToPoints(tmin_7)
+tmin_points_8 <- rasterToPoints(tmin_8)
+tmin_points_9 <- rasterToPoints(tmin_9)
+tmin_points_10 <- rasterToPoints(tmin_10)
+tmin_points_11 <- rasterToPoints(tmin_11)
+tmin_points_12 <- rasterToPoints(tmin_12)
+```
+
+
+# Prepare Training Data
+## Prepare training data for tmax and solar radiation
+```{r}
+############################################################
+####### Prepare training data for tmax and solar radiation
+############################################################
+tmax_sr_1 <- cbind(tmax_points_1[,1:2],tmax=tmax_points_1[,3],sr=sr_points_1[,3])
+tmax_sr_2 <- cbind(tmax_points_2[,1:2],tmax=tmax_points_2[,3],sr=sr_points_2[,3])
+tmax_sr_3 <- cbind(tmax_points_3[,1:2],tmax=tmax_points_3[,3],sr=sr_points_3[,3])
+tmax_sr_4 <- cbind(tmax_points_4[,1:2],tmax=tmax_points_4[,3],sr=sr_points_4[,3])
+tmax_sr_5 <- cbind(tmax_points_5[,1:2],tmax=tmax_points_5[,3],sr=sr_points_5[,3])
+tmax_sr_6 <- cbind(tmax_points_6[,1:2],tmax=tmax_points_6[,3],sr=sr_points_6[,3])
+tmax_sr_7 <- cbind(tmax_points_7[,1:2],tmax=tmax_points_7[,3],sr=sr_points_7[,3])
+tmax_sr_8 <- cbind(tmax_points_8[,1:2],tmax=tmax_points_8[,3],sr=sr_points_8[,3])
+tmax_sr_9 <- cbind(tmax_points_9[,1:2],tmax=tmax_points_9[,3],sr=sr_points_9[,3])
+tmax_sr_10 <- cbind(tmax_points_10[,1:2],tmax=tmax_points_10[,3],sr=sr_points_10[,3])
+tmax_sr_11 <- cbind(tmax_points_11[,1:2],tmax=tmax_points_11[,3],sr=sr_points_11[,3])
+tmax_sr_12 <- cbind(tmax_points_12[,1:2],tmax=tmax_points_12[,3],sr=sr_points_12[,3])
+
+# Merge the data from Jan to Dec
+total_tmax_sr <- rbind(tmax_sr_1, tmax_sr_2,tmax_sr_3,tmax_sr_4,tmax_sr_5,tmax_sr_6,
+               tmax_sr_7,tmax_sr_8,tmax_sr_9,tmax_sr_10,tmax_sr_11,tmax_sr_12)
+total_tmax_sr <- as.data.frame(total_tmax_sr)
+# Crop the data within the area
+total_tmax_sr <- subset(total_tmax_sr, total_tmax_sr$x >=-150 & total_tmax_sr$x <=-40 
+                     & total_tmax_sr$y >= 0 & total_tmax_sr$y <=70)
+
+# Normalization
+summary(total_tmax_sr)
+preproc1 <- preProcess(total_tmax_sr, method=c("center", "scale"))
+norm_tmax_sr <- predict(preproc1, total_tmax_sr)
+summary(norm_tmax_sr)
+```
+
+### Visualization
+
+```{r}
+# Randomly pick 0.5% of the data
+ind <- sample(c(TRUE, FALSE), 1325220, replace=TRUE, prob=c(0.001, 0.999))
+subset_tmax_sr <- total_tmax_sr[ind, ]
+# Scatter plot
+ggplot(subset_tmax_sr, aes(x=tmax, y=sr)) +
+  geom_point() +
+  labs(x="Maximum Temperature", y="Solar Radiation")+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
+  theme_ipsum()
+```
+
+## Prepare training data for tmin and solar radiation
+```{r}
+#####################################################
+# Prepare training data for tmin and solar radiation
+#####################################################
+tmin_sr_1 <- cbind(tmin_points_1[,1:2],tmin=tmin_points_1[,3],sr=sr_points_1[,3])
+tmin_sr_2 <- cbind(tmin_points_2[,1:2],tmin=tmin_points_2[,3],sr=sr_points_2[,3])
+tmin_sr_3 <- cbind(tmin_points_3[,1:2],tmin=tmin_points_3[,3],sr=sr_points_3[,3])
+tmin_sr_4 <- cbind(tmin_points_4[,1:2],tmin=tmin_points_4[,3],sr=sr_points_4[,3])
+tmin_sr_5 <- cbind(tmin_points_5[,1:2],tmin=tmin_points_5[,3],sr=sr_points_5[,3])
+tmin_sr_6 <- cbind(tmin_points_6[,1:2],tmin=tmin_points_6[,3],sr=sr_points_6[,3])
+tmin_sr_7 <- cbind(tmin_points_7[,1:2],tmin=tmin_points_7[,3],sr=sr_points_7[,3])
+tmin_sr_8 <- cbind(tmin_points_8[,1:2],tmin=tmin_points_8[,3],sr=sr_points_8[,3])
+tmin_sr_9 <- cbind(tmin_points_9[,1:2],tmin=tmin_points_9[,3],sr=sr_points_9[,3])
+tmin_sr_10 <- cbind(tmin_points_10[,1:2],tmin=tmin_points_10[,3],sr=sr_points_10[,3])
+tmin_sr_11 <- cbind(tmin_points_11[,1:2],tmin=tmin_points_11[,3],sr=sr_points_11[,3])
+tmin_sr_12 <- cbind(tmin_points_12[,1:2],tmin=tmin_points_12[,3],sr=sr_points_12[,3])
+
+# Merge the data from Jan to Dec
+total_tmin_sr <- rbind(tmin_sr_1, tmin_sr_2,tmin_sr_3,tmin_sr_4,tmin_sr_5,tmin_sr_6,
+                       tmin_sr_7,tmin_sr_8,tmin_sr_9,tmin_sr_10,tmin_sr_11,tmin_sr_12)
+total_tmin_sr <- as.data.frame(total_tmin_sr)
+# Crop the data within the area
+total_tmin_sr <- subset(total_tmin_sr, total_tmin_sr$x >=-150 & total_tmin_sr$x <=-40 
+                        & total_tmin_sr$y >= 0 & total_tmin_sr$y <=70)
+
+# Normalization
+summary(total_tmin_sr)
+preproc1 <- preProcess(total_tmin_sr, method=c("center", "scale"))
+norm_tmin_sr <- predict(preproc1, total_tmin_sr)
+summary(norm_tmin_sr)
+
+
+```
+
+### Visualization
+
+```{r}
+# Randomly pick 0.5% of the data
+ind <- sample(c(TRUE, FALSE), 1325220, replace=TRUE, prob=c(0.001, 0.999))
+subset_tmin_sr <- total_tmin_sr[ind, ]
+# Scatter plot
+ggplot(subset_tmin_sr, aes(x=tmin, y=sr)) +
+  geom_point() +
+  labs(x="Minimum Temperature", y="Solar Radiation")+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
+  theme_ipsum()
+```
+
+
+## Merging the tmin, tmax, sr, trange
+```{r}
+###############################################################
+# Merging the tmin, tmax, sr, trange
+###############################################################
+total_tmin_tmax_sr <- cbind(total_tmax_sr,tmin=total_tmin_sr[,3])
+# Create new column, which is the absolute difference between tmin and tmax
+total_tmin_tmax_sr$trange <- abs(total_tmin_tmax_sr[,3]-total_tmin_tmax_sr[,5])
+
+# Normalization
+summary(total_tmin_tmax_sr)
+preproc1 <- preProcess(total_tmin_tmax_sr, method=c("center", "scale"))
+norm_tmin_tmax_sr <- predict(preproc1, total_tmin_tmax_sr)
+summary(norm_tmin_tmax_sr)
+```
+
+# Linear Regression Model
+## 
+```{r}
+# Create linear regression-1
+# response: solar radiation
+# predictors: x,y,tmax
+lm_sr_tmax_all = lm(sr~., data = norm_tmax_sr) 
+summary(lm_sr_tmax_all)
+```
+
+```{r}
+
+# Create linear regression-2
+# response: solar radiation
+# predictors: tmax
+lm_sr_tmax = lm(sr~tmax, data = norm_tmax_sr) 
+summary(lm_sr_tmax)
+```
+
+```{r}
+# Create linear regression-3
+# response: tmax
+# predictors: x,y,sr
+lm_tmax_all = lm(tmax~., data = norm_tmax_sr) 
+summary(lm_tmax_all)
+```
+
+```{r}
+# Create linear regression-4
+# response: tmax
+# predictors: sr
+lm_tmax_sr = lm(tmax~sr, data = norm_tmax_sr) 
+summary(lm_tmax_sr)
+```
+
+```{r}
+# Create linear regression-5
+# response: solar radiation
+# predictors: x,y,tmin
+lm_sr_tmin_all = lm(sr~., data = norm_tmin_sr) 
+summary(lm_sr_tmin_all)
+```
+
+```{r}
+
+# Create linear regression-6
+# response: solar radiation
+# predictors: tmin
+lm_sr_tmin = lm(sr~tmin, data = norm_tmin_sr) 
+summary(lm_sr_tmin)
+```
+
+```{r}
+# Create linear regression-7
+# response: tmin
+# predictors: x,y,sr
+lm_tmin_all = lm(tmin~., data = norm_tmin_sr) 
+summary(lm_tmin_all)
+```
+
+```{r}
+# Create linear regression-8
+# response: tmin
+# predictors: sr
+lm_tmin_sr = lm(tmin~sr, data = norm_tmin_sr) 
+summary(lm_tmin_sr)
+
+```
+
+```{r}
+# Create linear regression-9
+# response: tmin
+# predictors: sr
+lm_sr_trange = lm(sr~trange, data = norm_tmin_tmax_sr) 
+summary(lm_sr_trange)
+```
+
+```{r}
+# Create linear regression-10
+# response: tmin
+# predictors: sr
+lm_sr_trange_all = lm(sr~x+y+trange, data = norm_tmin_tmax_sr) 
+summary(lm_sr_trange_all)
+```
+
+```{r}
+# Create linear regression-11
+# response: tmin
+# predictors: sr
+lm_trange = lm(trange~sr, data = norm_tmin_tmax_sr) 
+summary(lm_trange)
+```
+
+```{r}
+# Create linear regression-12
+# response: tmin
+# predictors: sr
+lm_xy_trange = lm(trange~x+y+sr, data = norm_tmin_tmax_sr) 
+summary(lm_xy_trange)
+```
+
+
